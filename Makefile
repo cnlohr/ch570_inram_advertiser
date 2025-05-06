@@ -4,14 +4,12 @@ TARGET:=broadcaster
 TARGET_MCU:=CH570
 TARGET_MCU_PACKAGE:=CH570D
 
+ADDITIONAL_C_FILES+=ble.c
 LINKER_SCRIPT:=app_in_ram.ld
 
 include ../ch32fun/ch32fun/ch32fun.mk
-LDFLAGS+=-L. -lCH572BLE_PERI
 
 flash : runfromram
-
-clean : cv_clean
 
 runfromram : $(TARGET).bin
 	$(MINICHLINK)/minichlink -kw $(TARGET).bin 0x20000000
