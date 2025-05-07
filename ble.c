@@ -12,7 +12,7 @@
 #define RF ((RF_Type *) RF_BASE)
 
 typedef struct{
-    volatile uint32_t BB0;
+    volatile uint32_t CTRL_CFG;
     volatile uint32_t CRCINIT1;
     volatile uint32_t CRCPOLY1;
     volatile uint32_t ACCESSADDRESS1;
@@ -25,7 +25,7 @@ typedef struct{
     volatile uint32_t BB10;
     volatile uint32_t BB11;
     volatile uint32_t BB12;
-    volatile uint32_t BB13;
+    volatile uint32_t CTRL_TX;
     volatile uint32_t BB14;
     volatile uint32_t BB15;
     volatile uint32_t BB16;
@@ -43,7 +43,7 @@ typedef struct{
     volatile uint32_t LL0;
     volatile uint32_t LL1;
     volatile uint32_t STATUS;
-    volatile uint32_t LL3;
+    volatile uint32_t INT_EN;
     volatile uint32_t LL4;
     volatile uint32_t LL5;
     volatile uint32_t LL6;
@@ -60,7 +60,7 @@ typedef struct{
     volatile uint32_t LL17;
     volatile uint32_t LL18;
     volatile uint32_t LL19;
-    volatile uint32_t LL20;
+    volatile uint32_t CTRL_MOD;
     volatile uint32_t LL21;
     volatile uint32_t LL22;
     volatile uint32_t LL23;
@@ -70,8 +70,8 @@ typedef struct{
     volatile uint32_t LL27;
     volatile uint32_t LL28;
     volatile uint32_t LL29;
-    volatile uint32_t LL30;
-    volatile uint32_t LL31;
+    volatile uint32_t FRAME_BUF;
+    volatile uint32_t STATE_BUF;
 } LL_Type;
 
 typedef struct{
@@ -130,7 +130,7 @@ typedef struct{
     volatile uint32_t RF_TXCTUNE_12;
 } RF_Type;
 
-__attribute__((aligned(4))) uint32_t LL_BUF[0x10c];
+__attribute__((aligned(4))) uint32_t LLE_BUF[0x10c];
 __attribute__((aligned(4))) uint8_t  ADV_BUF[40]; // for the advertisement, which is 37 bytes + 2 header bytes
 
 __attribute__((interrupt))
@@ -150,9 +150,9 @@ void DevInit(uint8_t TxPower) {
 	LL->LL19 = 0x76;
 	LL->LL1 = 0x78;
 	LL->LL21 = 0;
-	LL->LL31 = (uint32_t)LL_BUF;
+	LL->STATE_BUF = (uint32_t)LLE_BUF;
 	LL->STATUS = 0xffffffff;
-	LL->LL3 = 0x16000f;
+	LL->INT_EN = 0x16000f;
 
 	RF->RF10 = 0x480;
 	RF->RF12 &= 0xfff9ffff;
@@ -169,8 +169,8 @@ void DevInit(uint8_t TxPower) {
 
 	NVIC->VTFIDR[3] = 0x14;
 
-	BB->BB13 = (BB->BB13 & 0x1ffffff) | (TxPower | 0x40) << 0x19;
-	BB->BB0 &= 0xfffffcff;
+	BB->CTRL_TX = (BB->CTRL_TX & 0x1ffffff) | (TxPower | 0x40) << 0x19;
+	BB->CTRL_CFG &= 0xfffffcff;
 }
 
 void RFEND_TxTuneWait() {
@@ -345,13 +345,13 @@ void RFEND_TXTune() {
 }
 
 void RegInit() {
-	BB->BB0 &= 0xfffeffff;
+	BB->CTRL_CFG &= 0xfffeffff;
 	RF->RF2 |= 0x330000;
-	LL->LL20 = 0x30558;
+	LL->CTRL_MOD = 0x30558;
 	RFEND_TXTune();
-	BB->BB0 &= 0xfffdffff;
+	BB->CTRL_CFG &= 0xfffdffff;
 	RF->RF2 &= 0xffcdffff;
-	LL->LL20 = 0x30000;
+	LL->CTRL_MOD = 0x30000;
 }
 
 void BLECoreInit(uint8_t TxPower) {
@@ -364,12 +364,12 @@ void BLECoreInit(uint8_t TxPower) {
 __attribute__((section(".highcode")))
 void DevSetChannel(uint8_t channel) {
 	RF->RF11 &= 0xfffffffd;
-	BB->BB0 = (BB->BB0 & 0xffffff80) | (channel & 0x7f);
+	BB->CTRL_CFG = (BB->CTRL_CFG & 0xffffff80) | (channel & 0x7f);
 }
 
 __attribute__((section(".highcode")))
 void PHYSetTxMode(size_t len) {
-	BB->BB0 = (BB->BB0 & 0xfffffcff) | 0x100;
+	BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffffcff) | 0x100;
 	BB->BB9 = (BB->BB9 & 0xf9ffffff) | 0x2000000;
 	LL->LL4 &= 0xfffdffff;
 	LL->STATUS = 0x20000;
@@ -378,23 +378,23 @@ void PHYSetTxMode(size_t len) {
 
 __attribute__((section(".highcode")))
 void RF_Stop() {
-	BB->BB0 &= 0xfffdffff;
+	BB->CTRL_CFG &= 0xfffdffff;
 	RF->RF2 &= 0xffcdffff;
-	LL->LL20 &= 0x30000;
+	LL->CTRL_MOD &= 0x30000;
 
-	LL->LL20 &= 0xfffff8ff;
+	LL->CTRL_MOD &= 0xfffff8ff;
 	LL->LL0 |= 0x08;
 }
 
 __attribute__((section(".highcode")))
 void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
-	BB->BB13 = (BB->BB13 & 0xfffffffc) | 1;
+	BB->CTRL_TX = (BB->CTRL_TX & 0xfffffffc) | 1;
 
 	DevSetChannel(channel);
 
-	BB->BB0 &= 0xfffeffff;
+	BB->CTRL_CFG &= 0xfffeffff;
 	RF->RF2 |= 0x330000;
-	LL->LL20 = 0x30258;
+	LL->CTRL_MOD = 0x30258;
 
 	BB->ACCESSADDRESS1 = 0x8E89BED6; // access address
 	BB->ACCESSADDRESS2 = 0x8E89BED6;
@@ -407,12 +407,12 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	ADV_BUF[0] = 0x02; //TxPktType 0x00, 0x02, 0x06 seem to work, with only 0x02 showing up on the phone
 	ADV_BUF[1] = len ;
 	memcpy(&ADV_BUF[2], adv, len);
-	LL->LL30 = (uint32_t)ADV_BUF;
+	LL->FRAME_BUF = (uint32_t)ADV_BUF;
 
 	PHYSetTxMode(len);
 
-	BB->BB0 |= 0x1000000;
-	BB->BB13 &= 0xfffffffc;
+	BB->CTRL_CFG |= 0x1000000;
+	BB->CTRL_TX &= 0xfffffffc;
 	LL->LL0 = 0x02;
 
 	while(LL->LL25); // wait for tx buffer to empty
