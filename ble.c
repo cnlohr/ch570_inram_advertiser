@@ -258,12 +258,12 @@ void PHYSetTxMode(size_t len) {
 
 __attribute__((section(".highcode")))
 void RF_Stop() {
-	gptrLLEReg[20] &= 0xfffff8ff;
-	gptrLLEReg[0] |= 0x08;
-
 	gptrBBReg[0] &= 0xfffdffff;
 	gptrRFENDReg[2] &= 0xffcdffff;
 	gptrLLEReg[20] &= 0x30000;
+
+	gptrLLEReg[20] &= 0xfffff8ff;
+	gptrLLEReg[0] |= 0x08;
 }
 
 __attribute__((section(".highcode")))

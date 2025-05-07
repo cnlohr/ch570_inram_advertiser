@@ -18,6 +18,5 @@ runfromram : $(TARGET).bin
 	$(MINICHLINK)/minichlink -ks 0x17 0x002307b1 # Write DATA0 to DPC
 	$(MINICHLINK)/minichlink -ks 0x10 0x40000001 -T # Resume Request
 
-flash : cv_flash
 clean : cv_clean
 
