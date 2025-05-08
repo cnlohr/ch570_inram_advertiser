@@ -29,10 +29,6 @@ SECTIONS
 		. = ALIGN(4);
 		*(.text)
 		*(.text.*)
-		*(.highcode)
-		*(.highcode.*)
-		*(.highcode_lp);
-		*(.highcode_lp.*); 
 		*(.rodata)
 		*(.rodata*)
 		*(.gnu.linkonce.t.*)

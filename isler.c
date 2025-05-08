@@ -134,7 +134,6 @@ __attribute__((aligned(4))) uint32_t LLE_BUF[0x10c];
 __attribute__((aligned(4))) uint8_t  ADV_BUF[40]; // for the advertisement, which is 37 bytes + 2 header bytes
 
 __attribute__((interrupt))
-__attribute__((section(".highcode")))
 void LLE_IRQHandler() {
 	LL->STATUS = 0xffffffff;
 }
@@ -361,13 +360,11 @@ void BLECoreInit(uint8_t TxPower) {
 	NVIC->IENR[0] = 0x200000;
 }
 
-__attribute__((section(".highcode")))
 void DevSetChannel(uint8_t channel) {
 	RF->RF11 &= 0xfffffffd;
 	BB->CTRL_CFG = (BB->CTRL_CFG & 0xffffff80) | (channel & 0x7f);
 }
 
-__attribute__((section(".highcode")))
 void PHYSetTxMode(size_t len) {
 	BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffffcff) | 0x100;
 	BB->BB9 = (BB->BB9 & 0xf9ffffff) | 0x2000000;
@@ -376,7 +373,6 @@ void PHYSetTxMode(size_t len) {
 	LL->LL25 = (uint32_t)(((len *8) + 0xee) *2);
 }
 
-__attribute__((section(".highcode")))
 void RF_Stop() {
 	BB->CTRL_CFG &= 0xfffdffff;
 	RF->RF2 &= 0xffcdffff;
@@ -386,7 +382,6 @@ void RF_Stop() {
 	LL->LL0 |= 0x08;
 }
 
-__attribute__((section(".highcode")))
 void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	BB->CTRL_TX = (BB->CTRL_TX & 0xfffffffc) | 1;
 
