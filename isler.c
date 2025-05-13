@@ -1,6 +1,7 @@
 #include "ch32fun.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #define BB_BASE (0x4000c100)
@@ -97,6 +98,10 @@ typedef struct{
 	volatile uint32_t LL22;
 	volatile uint32_t LL23;
 	volatile uint32_t LL24;
+
+	// Immediately after tuning this value is 0x346/0x347,
+	// a microsecond or so later, it's 0x338/0x339,
+	// but after the PLL appears to have locked, this value is 0x1f8/0x1f9.
 	volatile uint32_t LL25;
 	volatile uint32_t LL26;
 	volatile uint32_t LL27;
@@ -380,6 +385,12 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	LL->FRAME_BUF = (uint32_t)ADV_BUF;
 
 	PHYSetTxMode(len);
+
+	// Wait for tuning bit to clear.
+	// Two candidates for this are: LL->LL25 & 0x200 while tuning
+	// And: !(RF->RF26 & 0x1000000) while tuning.
+	// Both seem to work equally well.
+	for( int timeout = 1000; LL->LL25 & 0x200 && timeout >= 0; timeout-- );
 
 	BB->CTRL_CFG |= 0x1000000;
 	BB->CTRL_TX &= 0xfffffffc;
