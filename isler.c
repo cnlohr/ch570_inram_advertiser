@@ -12,7 +12,18 @@
 #define RF ((RF_Type *) RF_BASE)
 
 typedef struct{
+	// bits 0..5 = Channel
+	// bit 6 = disable whitening.
+	// bit 8 = 1 during normal TX/operation, but clearing does not affect TX.  Note: 0 at reset, set in software.
+	// bit 9 = settable, but unknown effect.
+	// bit 10 = 1 during normal TX/operation, but clearing does not affect TX.  Note: 1 at reset, not touched in software.
+	// bit 16 = cleared by firmware upon TX, but does not seem to have an effect on the TX.
+	// bit 17 = settable, but unknown effect
+	// bit 20 = settable, but unknown effect.
+	// bit 24 = set at end of tx routine
+	// bit 29-31 = settable, but unknown effect.
 	volatile uint32_t CTRL_CFG;
+
 	volatile uint32_t CRCINIT1;
 	volatile uint32_t CRCPOLY1;
 	volatile uint32_t ACCESSADDRESS1;
@@ -25,6 +36,16 @@ typedef struct{
 	volatile uint32_t BB10;
 	volatile uint32_t BB11;
 	volatile uint32_t BB12;
+
+	// default, pre TX is a4000009
+	// bit 0: Set normally, but cleared in software when TXing (maybe a ready bit?)
+	// bit 1: Unset normally, but cleared anyway by software when TXing (maybe a fault bit?)
+	// bit 2: Disables TX.
+	// bit 4: Normally 0, but, if set to 1, seems to increase preamble length.
+	// bit 8: Normally 0, but, if set, no clear effect.
+	// bit 9: Normally 0, but, if set, no clear effect.
+	// bits 24-30: TX Power.  Normally 0xA4
+	// Oddly, bit 31 seems to maybe be always set.
 	volatile uint32_t CTRL_TX;
 	volatile uint32_t BB14;
 	volatile uint32_t BB15;
@@ -60,6 +81,17 @@ typedef struct{
 	volatile uint32_t LL17;
 	volatile uint32_t LL18;
 	volatile uint32_t LL19;
+
+	// Controls a lot of higher-level functions.
+	//  For Tuning: 0x30558
+	//  For  Idle:  0x30000
+	//  For Sending:0x30258
+	// Bit 3: Somehow, enables BB
+	// Bit 4: Normally 1, controls length/send times of BB, if unset, BB will double-send part of signals.
+	// Bit 6: Normally 1, Unknown effect.
+	// Bit 9: If 0, no output.
+	// Bit 10: Somehow required for TX?
+	// Bit 16-17: Normally 1, unknown effect. Seems to suppress odd carrier burst after message.
 	volatile uint32_t CTRL_MOD;
 	volatile uint32_t LL21;
 	volatile uint32_t LL22;
@@ -201,124 +233,68 @@ void RFEND_TXTune() {
 	uint8_t nGA2440 = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
 
 	uint32_t dCO0140 = nCO2401 - nCO2440;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xfffffff0) | ((dCO0140 * 39) / 39 & 0xfU);
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xffffff0f) | ((dCO0140 * 38) / 39 & 0xfU) << 4;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xfffff0ff) | ((dCO0140 * 37) / 39 & 0xfU) << 8;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xffff0fff) | ((dCO0140 * 36) / 39 & 0xfU) << 12;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xfff0ffff) | ((dCO0140 * 35) / 39 & 0xfU) << 16;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xff0fffff) | ((dCO0140 * 34) / 39 & 0xfU) << 20;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xf0ffffff) | ((dCO0140 * 33) / 39 & 0xfU) << 24;
-	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0x0fffffff) | ((dCO0140 * 32) / 39 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xfffffff0) | ((dCO0140 * 31) / 39 & 0xfU);
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xffffff0f) | ((dCO0140 * 30) / 39 & 0xfU) << 4;
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xfffff0ff) | ((dCO0140 * 29) / 39 & 0xfU) << 8;
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xffff0fff) | ((dCO0140 * 28) / 39 & 0xfU) << 12;
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xfff0ffff) | ((dCO0140 * 27) / 39 & 0xfU) << 16;
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xff0fffff) | ((dCO0140 * 26) / 39 & 0xfU) << 20;
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xf0ffffff) | ((dCO0140 * 25) / 39 & 0xfU) << 24;
-	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0x0fffffff) | ((dCO0140 * 24) / 39 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xfffffff0) | ((dCO0140 * 23) / 39 & 0xfU);
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xffffff0f) | ((dCO0140 * 22) / 39 & 0xfU) << 4;
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xfffff0ff) | ((dCO0140 * 21) / 39 & 0xfU) << 8;
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xffff0fff) | ((dCO0140 * 20) / 39 & 0xfU) << 12;
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xfff0ffff) | ((dCO0140 * 19) / 39 & 0xfU) << 16;
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xff0fffff) | ((dCO0140 * 18) / 39 & 0xfU) << 20;
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xf0ffffff) | ((dCO0140 * 17) / 39 & 0xfU) << 24;
-	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0x0fffffff) | ((dCO0140 * 16) / 39 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xfffffff0) | ((dCO0140 * 15) / 39 & 0xfU);
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xffffff0f) | ((dCO0140 * 14) / 39 & 0xfU) << 4;
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xfffff0ff) | ((dCO0140 * 13) / 39 & 0xfU) << 8;
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xffff0fff) | ((dCO0140 * 12) / 39 & 0xfU) << 12;
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xfff0ffff) | ((dCO0140 * 11) / 39 & 0xfU) << 16;
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xff0fffff) | ((dCO0140 * 10) / 39 & 0xfU) << 20;
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xf0ffffff) | ((dCO0140 * 9) / 39 & 0xfU) << 24;
-	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0x0fffffff) | ((dCO0140 * 8) / 39 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xfffffff0) | ((dCO0140 * 7) / 39 & 0xfU);
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xffffff0f) | ((dCO0140 * 6) / 39 & 0xfU) << 4;
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xfffff0ff) | ((dCO0140 * 5) / 39 & 0xfU) << 8;
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xffff0fff) | ((dCO0140 * 4) / 39 & 0xfU) << 12;
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xfff0ffff) | ((dCO0140 * 3) / 39 & 0xfU) << 16;
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xff0fffff) | ((dCO0140 * 2) / 39 & 0xfU) << 20;
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xf0ffffff) | ((dCO0140 * 1) / 39 & 0xfU) << 24;
-	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0x0fffffff) | ((dCO0140 * 0) / 39 & 0xfU) << 28;
-
 	uint32_t dCO4080 = nCO2440 - nCO2480;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xfffffff0) | ((dCO4080 * 1) / 40 & 0xfU);
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xffffff0f) | ((dCO4080 * 2) / 40 & 0xfU) << 4;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xfffff0ff) | ((dCO4080 * 3) / 40 & 0xfU) << 8;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xffff0fff) | ((dCO4080 * 4) / 40 & 0xfU) << 12;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xfff0ffff) | ((dCO4080 * 5) / 40 & 0xfU) << 16;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xff0fffff) | ((dCO4080 * 6) / 40 & 0xfU) << 20;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xf0ffffff) | ((dCO4080 * 7) / 40 & 0xfU) << 24;
-	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0x0fffffff) | ((dCO4080 * 8) / 30 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xfffffff0) | ((dCO4080 * 9) / 40 & 0xfU);
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xffffff0f) | ((dCO4080 * 10) / 40 & 0xfU) << 4;
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xfffff0ff) | ((dCO4080 * 11) / 40 & 0xfU) << 8;
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xffff0fff) | ((dCO4080 * 12) / 40 & 0xfU) << 12;
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xfff0ffff) | ((dCO4080 * 13) / 40 & 0xfU) << 16;
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xff0fffff) | ((dCO4080 * 14) / 40 & 0xfU) << 20;
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xf0ffffff) | ((dCO4080 * 15) / 40 & 0xfU) << 24;
-	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0x0fffffff) | ((dCO4080 * 16) / 40 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xfffffff0) | ((dCO4080 * 17) / 40 & 0xfU);
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xffffff0f) | ((dCO4080 * 18) / 40 & 0xfU) << 4;
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xfffff0ff) | ((dCO4080 * 19) / 40 & 0xfU) << 8;
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xffff0fff) | ((dCO4080 * 20) / 40 & 0xfU) << 12;
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xfff0ffff) | ((dCO4080 * 21) / 40 & 0xfU) << 16;
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xff0fffff) | ((dCO4080 * 22) / 40 & 0xfU) << 20;
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xf0ffffff) | ((dCO4080 * 23) / 40 & 0xfU) << 24;
-	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0x0fffffff) | ((dCO4080 * 24) / 40 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xfffffff0) | ((dCO4080 * 25) / 40 & 0xfU);
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xffffff0f) | ((dCO4080 * 26) / 40 & 0xfU) << 4;
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xfffff0ff) | ((dCO4080 * 27) / 40 & 0xfU) << 8;
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xffff0fff) | ((dCO4080 * 28) / 40 & 0xfU) << 12;
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xfff0ffff) | ((dCO4080 * 29) / 40 & 0xfU) << 16;
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xff0fffff) | ((dCO4080 * 30) / 40 & 0xfU) << 20;
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xf0ffffff) | ((dCO4080 * 31) / 40 & 0xfU) << 24;
-	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0x0fffffff) | ((dCO4080 * 32) / 40 & 0xfU) << 28;
-
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xfffffff0) | ((dCO4080 * 33) / 40 & 0xfU);
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xffffff0f) | ((dCO4080 * 34) / 40 & 0xfU) << 4;
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xfffff0ff) | ((dCO4080 * 35) / 40 & 0xfU) << 8;
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xffff0fff) | ((dCO4080 * 36) / 40 & 0xfU) << 12;
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xfff0ffff) | ((dCO4080 * 37) / 40 & 0xfU) << 16;
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xff0fffff) | ((dCO4080 * 38) / 40 & 0xfU) << 20;
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xf0ffffff) | ((dCO4080 * 39) / 40 & 0xfU) << 24;
-	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0x0fffffff) | dCO4080 * 0x10000000;
-
 	uint32_t dGA4080 = nGA2440 - nGA2480;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xfffffff0) | ((dCO4080 * 41) / 40 & 0xfU);
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xffffff0f) | ((dCO4080 * 42) / 40 & 0xfU) << 4;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xfffff0ff) | (((dGA4080 * 10) / dCO4080 & 0xfU) | 8) << 8;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xffff0fff) | (((dGA4080 * 9) / dCO4080 & 0xfU) | 8) << 12;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xfff0ffff) | (((dGA4080 * 8) / dCO4080 & 0xfU) | 8) << 16;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xff0fffff) | (((dGA4080 * 7) / dCO4080 & 0xfU) | 8) << 20;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xf0ffffff) | (((dGA4080 * 6) / dCO4080 & 0xfU) | 8) << 24;
-	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0x0fffffff) | (((dGA4080 * 5) / dCO4080 & 0xfU) | 8) << 28;
-	
 	uint32_t dGA0140 = nGA2401 - nGA2440;
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xfffffff0) | (((dGA4080 * 4) / dCO4080 & 0xfU) | 8);
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xffffff0f) | (((dGA4080 * 3) / dCO4080 & 0xfU) | 8) << 4;
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xfffff0ff) | (((dGA4080 * 2) / dCO4080 & 0xfU) | 8) << 8;
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xffff0fff) | (((dGA4080 * 1) / dCO4080 & 0xfU) | 8) << 12;
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xfff0ffff);
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xff0fffff) | ((dGA0140 * 1) / (int)dCO0140 & 0xfU) << 20;
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xf0ffffff) | ((dGA0140 * 2) / (int)dCO0140 & 0xfU) << 24;
-	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0x0fffffff) | ((dGA0140 * 3) / (int)dCO0140 & 0xfU)<< 28;
 
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xfffffff0) | ((dGA0140 * 4) / (int)dCO0140 & 0xfU);
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xffffff0f) | ((dGA0140 * 5) / (int)dCO0140 & 0xfU) << 4;
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xfffff0ff) | ((dGA0140 * 6) / (int)dCO0140 & 0xfU) << 8;
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xffff0fff) | ((dGA0140 * 7) / (int)dCO0140 & 0xfU) << 12;
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xfff0ffff) | ((dGA0140 * 8) / (int)dCO0140 & 0xfU) << 16;
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xff0fffff) | ((dGA0140 * 9) / (int)dCO0140 & 0xfU) << 20;
-	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xf0ffffff) | ((dGA0140 * 10) / (int)dCO0140 & 0xfU) << 24;
+	int i;
+
+	uint32_t dTUNE = dCO0140;
+	int ncdir = -1;
+	int nc = 39;
+	int div = 39; // This is kinda sus.  I think the original engineers intended this to be 40.
+	int extraor = 0;
+	for( i = 0; i < 13; i++ )
+	{
+		int j;
+		uint32_t tune = 0;
+		for( j = 0; j < 8; j++ )
+		{
+			if( i == 5 && j == 0 )
+			{
+				ncdir = 1;
+				nc = 1;
+				div = 40;
+				dTUNE = dCO4080;
+			}
+
+			if( i == 10 &&  j == 2  )
+			{
+				// For J = 0, 1, need to continue for 41, 42.
+				ncdir = -1;
+				nc = 10;
+				div = dCO4080;
+				dTUNE = dGA4080;
+				extraor = 8;
+			}
+
+			if( i == 11 && j == 4 )
+			{
+				extraor = 0;
+				nc = 0;
+				ncdir = 1;
+				dTUNE = dGA0140;
+				div = dCO0140;
+			}
+
+			if( i == 12 && j == 7 )
+			{
+				// There is no 7th register here.
+				nc = 0;
+			}
+
+			tune |= (((dTUNE * nc) / div & 0xfU) | extraor) << (j<<2);
+			nc += ncdir;
+		}
+		RF->RF_TXCTUNE[i] = tune;
+	}
+
+#if 0
+	for( i = 0; i < 13; i++ )
+	{
+		printf( "%d: %08x\n", i, RF->RF_TXCTUNE[i] );
+	}
+#endif
 
 	RF->RF1 &= 0xffffffef;
 	RF->RF1 &= 0xfffffffe;
@@ -355,8 +331,14 @@ void DevSetChannel(uint8_t channel) {
 
 void PHYSetTxMode(size_t len) {
 	BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffffcff) | 0x100;
+
+	// Confiugre 1MHz mode.  Unset 0x2000000 to switch to 2MHz bandwidth mode.)
+	// Note: There's probably something else that must be set if in 2MHz mode.
 	BB->BB9 = (BB->BB9 & 0xf9ffffff) | 0x2000000;
+
+	// This clears bit 17 (If set, seems to have no impact.)
 	LL->LL4 &= 0xfffdffff;
+
 	LL->STATUS = 0x20000;
 	LL->LL25 = (uint32_t)(((len *8) + 0xee) *2);
 }
@@ -376,6 +358,10 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	DevSetChannel(channel);
 
 	BB->CTRL_CFG &= 0xfffeffff;
+
+	// Uncomment to disable whitening to debug RF.
+	//BB->CTRL_CFG |= (1<<6);
+
 	RF->RF2 |= 0x330000;
 	LL->CTRL_MOD = 0x30258;
 
@@ -385,7 +371,8 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	BB->CRCINIT2 = 0x555555;
 	BB->CRCPOLY1 = (BB->CRCPOLY1 & 0xff000000) | 0x80032d; // crc poly
 	BB->CRCPOLY2 = (BB->CRCPOLY2 & 0xff000000) | 0x80032d;
-	LL->LL1 = (LL->LL1 & 0xfffffffe) | 1;
+
+	LL->LL1 |= 1; // Unknown why this needs to happen.
 
 	ADV_BUF[0] = 0x02; //TxPktType 0x00, 0x02, 0x06 seem to work, with only 0x02 showing up on the phone
 	ADV_BUF[1] = len ;
