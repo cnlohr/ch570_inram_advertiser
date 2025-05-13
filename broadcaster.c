@@ -47,6 +47,15 @@ int main()
 
 	blink(5);
 	printf("~ ch570 broadcaster !\n");
+
+#ifdef FUNCONF_SYSTICK_USE_HCLK
+	const uint32_t advance = (FUNCONF_SYSTEM_CORE_CLOCK/(3.0));
+#else
+	const uint32_t advance = (FUNCONF_SYSTEM_CORE_CLOCK/(3.0*8));
+#endif
+
+	uint32_t time_of_next_bcast = SysTick->CNT + advance;
+
 	while(1) {
 		printf( "BCAST\n" );
 #if 1
@@ -60,7 +69,11 @@ int main()
 			Advertise(adv, sizeof(adv), c );
 		}
 #endif
-		blink(1); // 33ms
-		Delay_Ms(300);
+		blink(1);
+
+
+		// Wait for 1/3 of a second to pass from the start/last time.
+		while( (int32_t)(SysTick->CNT - time_of_next_bcast) < 0 );
+		time_of_next_bcast += advance;
 	}
 }
