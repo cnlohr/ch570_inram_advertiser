@@ -333,20 +333,6 @@ void DevSetChannel(uint8_t channel) {
 	BB->CTRL_CFG = (BB->CTRL_CFG & 0xffffff80) | (channel & 0x7f);
 }
 
-void PHYSetTxMode(size_t len) {
-	BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffffcff) | 0x100;
-
-	// Confiugre 1MHz mode.  Unset 0x2000000 to switch to 2MHz bandwidth mode.)
-	// Note: There's probably something else that must be set if in 2MHz mode.
-	BB->BB9 = (BB->BB9 & 0xf9ffffff) | 0x2000000;
-
-	// This clears bit 17 (If set, seems to have no impact.)
-	LL->LL4 &= 0xfffdffff;
-
-	LL->STATUS = 0x20000;
-	LL->LL25 = (uint32_t)(((len *8) + 0xee) *2);
-}
-
 void RF_Stop() {
 	BB->CTRL_CFG &= 0xfffdffff;
 	RF->RF2 &= 0xffcdffff;
@@ -388,11 +374,23 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	// Wait for tuning bit to clear.
 	for( int timeout = 3000; !(RF->RF26 & 0x1000000) && timeout >= 0; timeout-- );
 
-	PHYSetTxMode(len);
+	//PHYSetTxMode(len);
+	BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffffcff) | 0x100;
+
+	// Confiugre 1MHz mode.  Unset 0x2000000 to switch to 2MHz bandwidth mode.)
+	// Note: There's probably something else that must be set if in 2MHz mode.
+	BB->BB9 = (BB->BB9 & 0xf9ffffff) | 0x2000000;
+
+	// This clears bit 17 (If set, seems to have no impact.)
+	LL->LL4 &= 0xfffdffff;
+
+	LL->STATUS = 0x20000;
+	LL->LL25 = (uint32_t)(((len *8) + 0xee) *2);
 
 	BB->CTRL_CFG |= 0x1000000;
 	BB->CTRL_TX &= 0xfffffffc;
-	LL->LL0 = 0x02;
+
+	LL->LL0 = 0x02; // Not sure what this does.  Does not seem to be critical.
 
 	while(LL->LL25); // wait for tx buffer to empty
 	RF_Stop();
