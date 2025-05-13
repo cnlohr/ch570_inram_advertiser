@@ -1,6 +1,7 @@
 /* Example of code that is compiled to run from RAM, pushed to RAM, then run from there. */
 
 #include "ch32fun.h"
+#include "isler.h"
 #include <stdio.h>
 
 #define LED               PA9
@@ -44,7 +45,7 @@ int main()
 	uint8_t adv_channels[] = {37,38,39};
 
 	blink(5);
-	printf("~ ch570 broadcaster ~\n");
+	printf("~ ch570 broadcaster !\n");
 	while(1) {
 		printf( "BCAST\n" );
 		for(int c = 0; c < sizeof(adv_channels); c++) {

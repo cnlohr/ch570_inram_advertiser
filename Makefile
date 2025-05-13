@@ -4,7 +4,6 @@ TARGET:=broadcaster
 TARGET_MCU:=CH570
 TARGET_MCU_PACKAGE:=CH570D
 
-ADDITIONAL_C_FILES+=isler.c
 LINKER_SCRIPT:=app_in_ram.ld
 
 include ../ch32fun/ch32fun/ch32fun.mk
