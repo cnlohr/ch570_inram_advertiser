@@ -49,7 +49,7 @@ int main()
 	printf("~ ch570 broadcaster !\n");
 	while(1) {
 		printf( "BCAST\n" );
-#if 0
+#if 1
 		// Only transmit on advertising channels.
 		for(int c = 0; c < sizeof(adv_channels); c++) {
 			Advertise(adv, sizeof(adv), adv_channels[c]);
