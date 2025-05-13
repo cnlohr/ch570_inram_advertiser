@@ -1,0 +1,145 @@
+The default mechanism to tune is as follows:
+
+The code in the tool just simplifes the way it's written.
+
+An example output looks like:
+0: 55666667
+1: 44445555
+2: 23333334
+3: 11112222
+4: 00000011
+5: 11000000
+6: 22211111
+7: 33333222
+8: 44444433
+9: 65555554
+10: abbccd66
+11: 1000899a
+12: 04333221
+
+
+
+
+	uint8_t nCO2440 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
+	uint8_t nGA2440 = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
+
+	uint32_t dCO0140 = nCO2401 - nCO2440;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xfffffff0) | ((dCO0140 * 39) / 39 & 0xfU);
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xffffff0f) | ((dCO0140 * 38) / 39 & 0xfU) << 4;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xfffff0ff) | ((dCO0140 * 37) / 39 & 0xfU) << 8;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xffff0fff) | ((dCO0140 * 36) / 39 & 0xfU) << 12;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xfff0ffff) | ((dCO0140 * 35) / 39 & 0xfU) << 16;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xff0fffff) | ((dCO0140 * 34) / 39 & 0xfU) << 20;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0xf0ffffff) | ((dCO0140 * 33) / 39 & 0xfU) << 24;
+	RF->RF_TXCTUNE[0] = (RF->RF_TXCTUNE[0] & 0x0fffffff) | ((dCO0140 * 32) / 39 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xfffffff0) | ((dCO0140 * 31) / 39 & 0xfU);
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xffffff0f) | ((dCO0140 * 30) / 39 & 0xfU) << 4;
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xfffff0ff) | ((dCO0140 * 29) / 39 & 0xfU) << 8;
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xffff0fff) | ((dCO0140 * 28) / 39 & 0xfU) << 12;
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xfff0ffff) | ((dCO0140 * 27) / 39 & 0xfU) << 16;
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xff0fffff) | ((dCO0140 * 26) / 39 & 0xfU) << 20;
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0xf0ffffff) | ((dCO0140 * 25) / 39 & 0xfU) << 24;
+	RF->RF_TXCTUNE[1] = (RF->RF_TXCTUNE[1] & 0x0fffffff) | ((dCO0140 * 24) / 39 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xfffffff0) | ((dCO0140 * 23) / 39 & 0xfU);
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xffffff0f) | ((dCO0140 * 22) / 39 & 0xfU) << 4;
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xfffff0ff) | ((dCO0140 * 21) / 39 & 0xfU) << 8;
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xffff0fff) | ((dCO0140 * 20) / 39 & 0xfU) << 12;
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xfff0ffff) | ((dCO0140 * 19) / 39 & 0xfU) << 16;
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xff0fffff) | ((dCO0140 * 18) / 39 & 0xfU) << 20;
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0xf0ffffff) | ((dCO0140 * 17) / 39 & 0xfU) << 24;
+	RF->RF_TXCTUNE[2] = (RF->RF_TXCTUNE[2] & 0x0fffffff) | ((dCO0140 * 16) / 39 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xfffffff0) | ((dCO0140 * 15) / 39 & 0xfU);
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xffffff0f) | ((dCO0140 * 14) / 39 & 0xfU) << 4;
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xfffff0ff) | ((dCO0140 * 13) / 39 & 0xfU) << 8;
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xffff0fff) | ((dCO0140 * 12) / 39 & 0xfU) << 12;
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xfff0ffff) | ((dCO0140 * 11) / 39 & 0xfU) << 16;
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xff0fffff) | ((dCO0140 * 10) / 39 & 0xfU) << 20;
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0xf0ffffff) | ((dCO0140 * 9) / 39 & 0xfU) << 24;
+	RF->RF_TXCTUNE[3] = (RF->RF_TXCTUNE[3] & 0x0fffffff) | ((dCO0140 * 8) / 39 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xfffffff0) | ((dCO0140 * 7) / 39 & 0xfU);
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xffffff0f) | ((dCO0140 * 6) / 39 & 0xfU) << 4;
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xfffff0ff) | ((dCO0140 * 5) / 39 & 0xfU) << 8;
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xffff0fff) | ((dCO0140 * 4) / 39 & 0xfU) << 12;
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xfff0ffff) | ((dCO0140 * 3) / 39 & 0xfU) << 16;
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xff0fffff) | ((dCO0140 * 2) / 39 & 0xfU) << 20;
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0xf0ffffff) | ((dCO0140 * 1) / 39 & 0xfU) << 24;
+	RF->RF_TXCTUNE[4] = (RF->RF_TXCTUNE[4] & 0x0fffffff) | ((dCO0140 * 0) / 39 & 0xfU) << 28;
+
+	uint32_t dCO4080 = nCO2440 - nCO2480;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xfffffff0) | ((dCO4080 * 1) / 40 & 0xfU);
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xffffff0f) | ((dCO4080 * 2) / 40 & 0xfU) << 4;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xfffff0ff) | ((dCO4080 * 3) / 40 & 0xfU) << 8;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xffff0fff) | ((dCO4080 * 4) / 40 & 0xfU) << 12;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xfff0ffff) | ((dCO4080 * 5) / 40 & 0xfU) << 16;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xff0fffff) | ((dCO4080 * 6) / 40 & 0xfU) << 20;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0xf0ffffff) | ((dCO4080 * 7) / 40 & 0xfU) << 24;
+	RF->RF_TXCTUNE[5] = (RF->RF_TXCTUNE[5] & 0x0fffffff) | ((dCO4080 * 8) / 30 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xfffffff0) | ((dCO4080 * 9) / 40 & 0xfU);
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xffffff0f) | ((dCO4080 * 10) / 40 & 0xfU) << 4;
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xfffff0ff) | ((dCO4080 * 11) / 40 & 0xfU) << 8;
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xffff0fff) | ((dCO4080 * 12) / 40 & 0xfU) << 12;
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xfff0ffff) | ((dCO4080 * 13) / 40 & 0xfU) << 16;
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xff0fffff) | ((dCO4080 * 14) / 40 & 0xfU) << 20;
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0xf0ffffff) | ((dCO4080 * 15) / 40 & 0xfU) << 24;
+	RF->RF_TXCTUNE[6] = (RF->RF_TXCTUNE[6] & 0x0fffffff) | ((dCO4080 * 16) / 40 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xfffffff0) | ((dCO4080 * 17) / 40 & 0xfU);
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xffffff0f) | ((dCO4080 * 18) / 40 & 0xfU) << 4;
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xfffff0ff) | ((dCO4080 * 19) / 40 & 0xfU) << 8;
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xffff0fff) | ((dCO4080 * 20) / 40 & 0xfU) << 12;
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xfff0ffff) | ((dCO4080 * 21) / 40 & 0xfU) << 16;
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xff0fffff) | ((dCO4080 * 22) / 40 & 0xfU) << 20;
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0xf0ffffff) | ((dCO4080 * 23) / 40 & 0xfU) << 24;
+	RF->RF_TXCTUNE[7] = (RF->RF_TXCTUNE[7] & 0x0fffffff) | ((dCO4080 * 24) / 40 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xfffffff0) | ((dCO4080 * 25) / 40 & 0xfU);
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xffffff0f) | ((dCO4080 * 26) / 40 & 0xfU) << 4;
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xfffff0ff) | ((dCO4080 * 27) / 40 & 0xfU) << 8;
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xffff0fff) | ((dCO4080 * 28) / 40 & 0xfU) << 12;
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xfff0ffff) | ((dCO4080 * 29) / 40 & 0xfU) << 16;
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xff0fffff) | ((dCO4080 * 30) / 40 & 0xfU) << 20;
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0xf0ffffff) | ((dCO4080 * 31) / 40 & 0xfU) << 24;
+	RF->RF_TXCTUNE[8] = (RF->RF_TXCTUNE[8] & 0x0fffffff) | ((dCO4080 * 32) / 40 & 0xfU) << 28;
+
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xfffffff0) | ((dCO4080 * 33) / 40 & 0xfU);
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xffffff0f) | ((dCO4080 * 34) / 40 & 0xfU) << 4;
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xfffff0ff) | ((dCO4080 * 35) / 40 & 0xfU) << 8;
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xffff0fff) | ((dCO4080 * 36) / 40 & 0xfU) << 12;
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xfff0ffff) | ((dCO4080 * 37) / 40 & 0xfU) << 16;
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xff0fffff) | ((dCO4080 * 38) / 40 & 0xfU) << 20;
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0xf0ffffff) | ((dCO4080 * 39) / 40 & 0xfU) << 24;
+	RF->RF_TXCTUNE[9] = (RF->RF_TXCTUNE[9] & 0x0fffffff) | dCO4080 * 0x10000000;
+
+	uint32_t dGA4080 = nGA2440 - nGA2480;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xfffffff0) | ((dCO4080 * 41) / 40 & 0xfU);
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xffffff0f) | ((dCO4080 * 42) / 40 & 0xfU) << 4;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xfffff0ff) | (((dGA4080 * 10) / dCO4080 & 0xfU) | 8) << 8;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xffff0fff) | (((dGA4080 * 9) / dCO4080 & 0xfU) | 8) << 12;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xfff0ffff) | (((dGA4080 * 8) / dCO4080 & 0xfU) | 8) << 16;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xff0fffff) | (((dGA4080 * 7) / dCO4080 & 0xfU) | 8) << 20;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0xf0ffffff) | (((dGA4080 * 6) / dCO4080 & 0xfU) | 8) << 24;
+	RF->RF_TXCTUNE[10] = (RF->RF_TXCTUNE[10] & 0x0fffffff) | (((dGA4080 * 5) / dCO4080 & 0xfU) | 8) << 28;
+	
+	uint32_t dGA0140 = nGA2401 - nGA2440;
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xfffffff0) | (((dGA4080 * 4) / dCO4080 & 0xfU) | 8);
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xffffff0f) | (((dGA4080 * 3) / dCO4080 & 0xfU) | 8) << 4;
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xfffff0ff) | (((dGA4080 * 2) / dCO4080 & 0xfU) | 8) << 8;
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xffff0fff) | (((dGA4080 * 1) / dCO4080 & 0xfU) | 8) << 12;
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xfff0ffff);
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xff0fffff) | ((dGA0140 * 1) / (int)dCO0140 & 0xfU) << 20;
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0xf0ffffff) | ((dGA0140 * 2) / (int)dCO0140 & 0xfU) << 24;
+	RF->RF_TXCTUNE[11] = (RF->RF_TXCTUNE[11] & 0x0fffffff) | ((dGA0140 * 3) / (int)dCO0140 & 0xfU)<< 28;
+
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xfffffff0) | ((dGA0140 * 4) / (int)dCO0140 & 0xfU);
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xffffff0f) | ((dGA0140 * 5) / (int)dCO0140 & 0xfU) << 4;
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xfffff0ff) | ((dGA0140 * 6) / (int)dCO0140 & 0xfU) << 8;
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xffff0fff) | ((dGA0140 * 7) / (int)dCO0140 & 0xfU) << 12;
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xfff0ffff) | ((dGA0140 * 8) / (int)dCO0140 & 0xfU) << 16;
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xff0fffff) | ((dGA0140 * 9) / (int)dCO0140 & 0xfU) << 20;
+	RF->RF_TXCTUNE[12] = (RF->RF_TXCTUNE[12] & 0xf0ffffff) | ((dGA0140 * 10) / (int)dCO0140 & 0xfU) << 24;
+
