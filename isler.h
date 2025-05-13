@@ -156,7 +156,6 @@ typedef struct{
 } RF_Type;
 
 __attribute__((aligned(4))) uint32_t LLE_BUF[0x10c];
-__attribute__((aligned(4))) uint8_t  ADV_BUF[40]; // for the advertisement, which is 37 bytes + 2 header bytes
 
 __attribute__((interrupt))
 void LLE_IRQHandler() {
@@ -358,6 +357,8 @@ void RF_Stop() {
 }
 
 void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
+	__attribute__((aligned(4))) uint8_t  ADV_BUF[len+2]; // for the advertisement, which is 37 bytes + 2 header bytes
+
 	BB->CTRL_TX = (BB->CTRL_TX & 0xfffffffc) | 1;
 
 	DevSetChannel(channel);
@@ -384,13 +385,10 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	memcpy(&ADV_BUF[2], adv, len);
 	LL->FRAME_BUF = (uint32_t)ADV_BUF;
 
-	PHYSetTxMode(len);
-
 	// Wait for tuning bit to clear.
-	// Two candidates for this are: LL->LL25 & 0x200 while tuning
-	// And: !(RF->RF26 & 0x1000000) while tuning.
-	// Both seem to work equally well.
-	for( int timeout = 1000; LL->LL25 & 0x200 && timeout >= 0; timeout-- );
+	for( int timeout = 3000; !(RF->RF26 & 0x1000000) && timeout >= 0; timeout-- );
+
+	PHYSetTxMode(len);
 
 	BB->CTRL_CFG |= 0x1000000;
 	BB->CTRL_TX &= 0xfffffffc;

@@ -29,6 +29,7 @@ int main()
 	BLECoreInit(LL_TX_POWER_0_DBM);
 
 #if 1
+	// Apple Find My Stuff Packet
 	uint8_t adv[] = {0x66, 0x55, 0x44, 0x33, 0x22, 0xd1, // MAC (reversed)
 					 0x1e, 0xff, 0x4c, 0x00, 0x12, 0x19, 0x00, // Apple FindMy stuff
 					 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xef, 0xfe, 0xdd,0xcc, // key
@@ -48,9 +49,17 @@ int main()
 	printf("~ ch570 broadcaster !\n");
 	while(1) {
 		printf( "BCAST\n" );
+#if 0
+		// Only transmit on advertising channels.
 		for(int c = 0; c < sizeof(adv_channels); c++) {
 			Advertise(adv, sizeof(adv), adv_channels[c]);
 		}
+#else
+		// Sequence across spectrum
+		for(int c = 0; c < 41; c++) {
+			Advertise(adv, sizeof(adv), c );
+		}
+#endif
 		blink(1); // 33ms
 		Delay_Ms(300);
 	}
