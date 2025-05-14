@@ -196,6 +196,18 @@ void DevInit(uint8_t TxPower) {
 	BB->CTRL_CFG &= 0xfffffcff;
 }
 
+void DevSetMode(uint16_t mode) {
+	if(mode) {
+		BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffcffff) | 0x20000;
+		RF->RF2 |= 0x330000;
+	}
+	else {
+		BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffcffff) | 0x10000;
+		RF->RF2 &= 0xffcdffff;
+	}
+	LL->CTRL_MOD = (0x30000 | mode);
+}
+
 void RFEND_TxTuneWait() {
 	LL->TMR = 8000;
 	while((-1 < (int32_t)RF->RF_TXCTUNE_CO << 5) || (-1 < (int32_t)RF->RF_TXCTUNE_CO << 6)) {
@@ -312,13 +324,9 @@ void RFEND_TXTune() {
 }
 
 void RegInit() {
-	BB->CTRL_CFG &= 0xfffeffff;
-	RF->RF2 |= 0x330000;
-	LL->CTRL_MOD = 0x30558;
+	DevSetMode(0x0558);
 	RFEND_TXTune();
-	BB->CTRL_CFG &= 0xfffdffff;
-	RF->RF2 &= 0xffcdffff;
-	LL->CTRL_MOD = 0x30000;
+	DevSetMode(0);
 }
 
 void BLECoreInit(uint8_t TxPower) {
@@ -334,10 +342,7 @@ void DevSetChannel(uint8_t channel) {
 }
 
 void RF_Stop() {
-	BB->CTRL_CFG &= 0xfffdffff;
-	RF->RF2 &= 0xffcdffff;
-	LL->CTRL_MOD &= 0x30000;
-
+	DevSetMode(0);
 	LL->CTRL_MOD &= 0xfffff8ff;
 	LL->LL0 |= 0x08;
 }
@@ -349,13 +354,9 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 
 	DevSetChannel(channel);
 
-	BB->CTRL_CFG &= 0xfffeffff;
-
 	// Uncomment to disable whitening to debug RF.
 	//BB->CTRL_CFG |= (1<<6);
-
-	RF->RF2 |= 0x330000;
-	LL->CTRL_MOD = 0x30258;
+	DevSetMode(0x0258);
 
 	BB->ACCESSADDRESS1 = 0x8E89BED6; // access address
 	BB->ACCESSADDRESS2 = 0x8E89BED6;
