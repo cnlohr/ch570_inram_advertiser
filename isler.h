@@ -102,7 +102,7 @@ typedef struct{
 	// Immediately after tuning this value is 0x346/0x347,
 	// a microsecond or so later, it's 0x338/0x339,
 	// but after the PLL appears to have locked, this value is 0x1f8/0x1f9.
-	volatile uint32_t LL25;
+	volatile uint32_t TMR;
 	volatile uint32_t LL26;
 	volatile uint32_t LL27;
 	volatile uint32_t LL28;
@@ -197,9 +197,9 @@ void DevInit(uint8_t TxPower) {
 }
 
 void RFEND_TxTuneWait() {
-	LL->LL25 = 8000;
+	LL->TMR = 8000;
 	while((-1 < (int32_t)RF->RF_TXCTUNE_CO << 5) || (-1 < (int32_t)RF->RF_TXCTUNE_CO << 6)) {
-		if(LL->LL25 == 0) {
+		if(LL->TMR == 0) {
 			break;
 		}
 	}
@@ -385,13 +385,13 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	LL->LL4 &= 0xfffdffff;
 
 	LL->STATUS = 0x20000;
-	LL->LL25 = (uint32_t)(((len *8) + 0xee) *2);
+	LL->TMR = (uint32_t)(((len *8) + 0xee) *2);
 
 	BB->CTRL_CFG |= 0x1000000;
 	BB->CTRL_TX &= 0xfffffffc;
 
 	LL->LL0 = 0x02; // Not sure what this does.  Does not seem to be critical.
 
-	while(LL->LL25); // wait for tx buffer to empty
+	while(LL->TMR); // wait for tx buffer to empty
 	RF_Stop();
 }
