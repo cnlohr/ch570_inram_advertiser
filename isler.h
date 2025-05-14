@@ -126,7 +126,7 @@ typedef struct{
 	volatile uint32_t RF11;
 	volatile uint32_t RF12;
 	volatile uint32_t RF13;
-	volatile uint32_t RF14;
+	volatile uint32_t TXTUNE_CTRL;
 	volatile uint32_t RF15;
 	volatile uint32_t RF16;
 	volatile uint32_t RF17;
@@ -214,7 +214,7 @@ void RFEND_TXTune() {
 
 	// 2401 MHz
 	RF->RF1 &= 0xfffffffe;
-	RF->RF14 = (RF->RF14 & 0xfffe00ff) | 0xbf00;
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | 0xbf00;
 	RF->RF1 |= 1;
 	RFEND_TxTuneWait();
 	uint8_t nCO2401 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
@@ -222,7 +222,7 @@ void RFEND_TXTune() {
 
 	// 2480 MHz
 	RF->RF1 &= 0xfffffffe;
-	RF->RF14 = (RF->RF14 & 0xfffe00ff) | 0xe700;
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | 0xe700;
 	RF->RF1 |= 1;
 	RFEND_TxTuneWait();
 	uint8_t nCO2480 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
@@ -230,7 +230,7 @@ void RFEND_TXTune() {
 
 	// 2440 MHz
 	RF->RF1 &= 0xfffffffe;
-	RF->RF14 = (RF->RF14 & 0xfffe00ff) | 0xd300;
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | 0xd300;
 	RF->RF1 |= 1;
 	RFEND_TxTuneWait();
 	uint8_t nCO2440 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
@@ -304,8 +304,8 @@ void RFEND_TXTune() {
 	RF->RF1 &= 0xfffffffe;
 	RF->RF10 |= 0x1000;
 	RF->RF11 |= 0x10;
-	RF->RF14 = (RF->RF14 & 0xffffffc0) | (nCO2440 & 0x3f);
-	RF->RF14 = (RF->RF14 & 0x80ffffff) | ((nGA2440 & 0x7f) << 0x18);
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xffffffc0) | (nCO2440 & 0x3f);
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0x80ffffff) | ((nGA2440 & 0x7f) << 0x18);
 
 	// FTune
 	RF->RF1 |= 0x100;
