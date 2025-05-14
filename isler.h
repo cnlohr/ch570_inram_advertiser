@@ -341,12 +341,6 @@ void DevSetChannel(uint8_t channel) {
 	BB->CTRL_CFG = (BB->CTRL_CFG & 0xffffff80) | (channel & 0x7f);
 }
 
-void RF_Stop() {
-	DevSetMode(0);
-	LL->CTRL_MOD &= 0xfffff8ff;
-	LL->LL0 |= 0x08;
-}
-
 void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	__attribute__((aligned(4))) uint8_t  ADV_BUF[len+2]; // for the advertisement, which is 37 bytes + 2 header bytes
 
@@ -394,5 +388,7 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	LL->LL0 = 0x02; // Not sure what this does.  Does not seem to be critical.
 
 	while(LL->TMR); // wait for tx buffer to empty
-	RF_Stop();
+	DevSetMode(0);
+	LL->CTRL_MOD &= 0xfffff8ff;
+	LL->LL0 |= 0x08;
 }
