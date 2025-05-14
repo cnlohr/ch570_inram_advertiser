@@ -155,6 +155,10 @@ typedef struct{
 	volatile uint32_t RF_TXCTUNE[13];
 } RF_Type;
 
+uint8_t channel_map[] = {1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,0,11,39};
+#define CO_MID (uint8_t)(RF->TXTUNE_CTRL & ~0xffffffc0)
+#define GA_MID (uint8_t)((RF->TXTUNE_CTRL & ~0x80ffffff) >> 24)
+
 __attribute__((aligned(4))) uint32_t LLE_BUF[0x10c];
 
 __attribute__((interrupt))
@@ -208,13 +212,25 @@ void DevSetMode(uint16_t mode) {
 	LL->CTRL_MOD = (0x30000 | mode);
 }
 
-void RFEND_TxTuneWait() {
+uint32_t RFEND_TXCTune(uint8_t channel) {
+	// 0xbf = 2401 MHz
+	RF->RF1 &= 0xfffffffe;
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | (0xbf00 + (channel_map[channel] << 8));
+	RF->RF1 |= 1;
+
 	LL->TMR = 8000;
 	while((-1 < (int32_t)RF->RF_TXCTUNE_CO << 5) || (-1 < (int32_t)RF->RF_TXCTUNE_CO << 6)) {
 		if(LL->TMR == 0) {
 			break;
 		}
 	}
+
+	uint8_t nCO = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
+	uint8_t nGA = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
+
+	// printf("nCO,nGA ch:%u idx:%u %u,%u\n", channel, channel_map[channel], nCO,nGA);
+
+	return (nGA << 24) | nCO;
 }
 
 void RFEND_TXTune() {
@@ -225,28 +241,19 @@ void RFEND_TXTune() {
 	RF->RF1 |= 0x10;
 
 	// 2401 MHz
-	RF->RF1 &= 0xfffffffe;
-	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | 0xbf00;
-	RF->RF1 |= 1;
-	RFEND_TxTuneWait();
-	uint8_t nCO2401 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
-	uint8_t nGA2401 = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
+	uint32_t tune2401 = RFEND_TXCTune(37);
+	uint8_t nCO2401 = (uint8_t)(tune2401 & 0x3f);
+	uint8_t nGA2401 = (uint8_t)(tune2401 >> 24) & 0x7f;
 
 	// 2480 MHz
-	RF->RF1 &= 0xfffffffe;
-	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | 0xe700;
-	RF->RF1 |= 1;
-	RFEND_TxTuneWait();
-	uint8_t nCO2480 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
-	uint8_t nGA2480 = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
+	uint32_t tune2480 = RFEND_TXCTune(39);
+	uint8_t nCO2480 = (uint8_t)(tune2480 & 0x3f);
+	uint8_t nGA2480 = (uint8_t)(tune2480 >> 24) & 0x7f;
 
 	// 2440 MHz
-	RF->RF1 &= 0xfffffffe;
-	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xfffe00ff) | 0xd300;
-	RF->RF1 |= 1;
-	RFEND_TxTuneWait();
-	uint8_t nCO2440 = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
-	uint8_t nGA2440 = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
+	uint32_t tune2440 = RFEND_TXCTune(18);
+	uint8_t nCO2440 = (uint8_t)(tune2440 & 0x3f);
+	uint8_t nGA2440 = (uint8_t)(tune2440 >> 24) & 0x7f;
 
 	uint32_t dCO0140 = nCO2401 - nCO2440;
 	uint32_t dCO4080 = nCO2440 - nCO2480;
@@ -316,8 +323,8 @@ void RFEND_TXTune() {
 	RF->RF1 &= 0xfffffffe;
 	RF->RF10 |= 0x1000;
 	RF->RF11 |= 0x10;
-	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xffffffc0) | (nCO2440 & 0x3f);
-	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0x80ffffff) | ((nGA2440 & 0x7f) << 0x18);
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0xffffffc0) | (tune2440 & 0x3f);
+	RF->TXTUNE_CTRL = (RF->TXTUNE_CTRL & 0x80ffffff) | (tune2440 & 0x7f000000);
 
 	// FTune
 	RF->RF1 |= 0x100;
@@ -361,7 +368,7 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 
 	LL->LL1 |= 1; // Unknown why this needs to happen.
 
-	ADV_BUF[0] = 0x02; //TxPktType 0x00, 0x02, 0x06 seem to work, with only 0x02 showing up on the phone
+	ADV_BUF[0] = 0x02; // PDU 0x00, 0x02, 0x06 seem to work, with only 0x02 showing up on the phone
 	ADV_BUF[1] = len ;
 	memcpy(&ADV_BUF[2], adv, len);
 	LL->FRAME_BUF = (uint32_t)ADV_BUF;
