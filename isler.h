@@ -148,11 +148,12 @@ typedef struct{
 	volatile uint32_t RF33;
 	volatile uint32_t RF34;
 	volatile uint32_t RF35;
-	volatile uint32_t RF_TXCTUNE_CO;
-	volatile uint32_t RF_TXCTUNE_GA;
+	volatile uint32_t TXCTUNE_CO_CTRL;
+	volatile uint32_t TXCTUNE_GA_CTRL;
 	volatile uint32_t RF38;
 	volatile uint32_t RF39;
-	volatile uint32_t RF_TXCTUNE[13];
+	volatile uint32_t TXCTUNE_CO[10];
+	volatile uint32_t TXCTUNE_GA[3];
 } RF_Type;
 
 uint8_t channel_map[] = {1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,0,11,39};
@@ -219,14 +220,14 @@ uint32_t RFEND_TXCTune(uint8_t channel) {
 	RF->RF1 |= 1;
 
 	LL->TMR = 8000;
-	while((-1 < (int32_t)RF->RF_TXCTUNE_CO << 5) || (-1 < (int32_t)RF->RF_TXCTUNE_CO << 6)) {
+	while(!(RF->TXCTUNE_CO_CTRL & (1 << 25)) || !(RF->TXCTUNE_CO_CTRL & (1 << 26))) {
 		if(LL->TMR == 0) {
 			break;
 		}
 	}
 
-	uint8_t nCO = (uint8_t)RF->RF_TXCTUNE_CO & 0x3f;
-	uint8_t nGA = (uint8_t)(RF->RF_TXCTUNE_GA >> 10) & 0x7f;
+	uint8_t nCO = (uint8_t)RF->TXCTUNE_CO_CTRL & 0x3f;
+	uint8_t nGA = (uint8_t)(RF->TXCTUNE_GA_CTRL >> 10) & 0x7f;
 
 	// printf("nCO,nGA ch:%u idx:%u %u,%u\n", channel, channel_map[channel], nCO,nGA);
 
@@ -257,65 +258,50 @@ void RFEND_TXTune() {
 
 	uint32_t dCO0140 = nCO2401 - nCO2440;
 	uint32_t dCO4080 = nCO2440 - nCO2480;
-	uint32_t dGA4080 = nGA2440 - nGA2480;
-	uint32_t dGA0140 = nGA2401 - nGA2440;
-
-	int i;
-
-	uint32_t dTUNE = dCO0140;
-	int ncdir = -1;
-	int nc = 39;
-	int div = 39; // This is kinda sus.  I think the original engineers intended this to be 40.
-	int extraor = 0;
-	for( i = 0; i < 13; i++ )
-	{
-		int j;
-		uint32_t tune = 0;
-		for( j = 0; j < 8; j++ )
-		{
-			if( i == 5 && j == 0 )
-			{
-				ncdir = 1;
-				nc = 1;
-				div = 40;
-				dTUNE = dCO4080;
-			}
-
-			if( i == 10 &&  j == 2  )
-			{
-				// For J = 0, 1, need to continue for 41, 42.
-				ncdir = -1;
-				nc = 10;
-				div = dCO4080;
-				dTUNE = dGA4080;
-				extraor = 8;
-			}
-
-			if( i == 11 && j == 4 )
-			{
-				extraor = 0;
-				nc = 0;
-				ncdir = 1;
-				dTUNE = dGA0140;
-				div = dCO0140;
-			}
-
-			if( i == 12 && j == 7 )
-			{
-				// There is no 7th register here.
-				nc = 0;
-			}
-
-			tune |= (((dTUNE * nc) / div & 0xfU) | extraor) << (j<<2);
-			nc += ncdir;
-		}
-		RF->RF_TXCTUNE[i] = tune;
+	uint8_t tune = 0;
+	uint8_t int_points = sizeof(RF->TXCTUNE_CO) /2;
+	uint8_t txctune_co[sizeof(RF->TXCTUNE_CO)] = {0};
+	for(int f = 0; f < int_points; f++) {
+		tune = (dCO0140 * (int_points -f)) / int_points;
+		txctune_co[f] = tune | (tune << 4);
+	}
+	for(int f = int_points; f < sizeof(RF->TXCTUNE_CO); f++) {
+		tune = (dCO4080 * (f -int_points)) / int_points;
+		txctune_co[f] = tune | (tune << 4);
+	}
+	for(int i = 0; i < sizeof(txctune_co) /4; i++) {
+		RF->TXCTUNE_CO[i] = ((uint32_t*)txctune_co)[i];
 	}
 
+	// This GA interpolating is not exactly what is done in EVT
+	// Actually the reception on a BLE monitor is better when this is left out completely
+	// This will need some proper experimentation by people with 2.4GHz SDRs
 #if 0
-	for( i = 0; i < 13; i++ )
-	{
-		printf( "%d: %08x\n", i, RF->RF_TXCTUNE[i] );
+	uint32_t dGA0140 = nGA2401 - nGA2440;
+	uint32_t dGA4080 = nGA2440 - nGA2480;
+	int_points = sizeof(RF->TXCTUNE_GA) /2;
+	uint8_t txctune_ga[sizeof(RF->TXCTUNE_GA)] = {0};
+	for(int f = 1; f < int_points; f++) {
+		tune = (dGA0140 * (int_points -f)) / int_points;
+		txctune_ga[f] = tune | (tune << 4);
+	}
+	for(int f = int_points; f < sizeof(RF->TXCTUNE_GA) -1; f++) {
+		tune = (dGA4080 * (f -int_points)) / int_points;
+		txctune_ga[f] = tune | (tune << 4);
+	}
+	for(int i = 0; i < (sizeof(txctune_ga) /4); i++) {
+		RF->TXCTUNE_GA[i] = ((uint32_t*)txctune_ga)[i];
+	}
+#endif
+
+
+#if 1
+	printf("2401 2440 2480 CO: %u %u %u, GA: %u %u %u\n", nCO2401, nCO2440, nCO2480, nGA2401, nGA2440, nGA2480);
+	for(int i = 0; i < 10; i++ ) {
+		printf( "%d: %08lx\n", i, RF->TXCTUNE_CO[i] );
+	}
+	for(int i = 0; i < 3; i++ ) {
+		printf( "%d: %08lx\n", i, RF->TXCTUNE_GA[i] );
 	}
 #endif
 

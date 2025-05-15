@@ -57,7 +57,7 @@ int main()
 	uint32_t time_of_next_bcast = SysTick->CNT + advance;
 
 	while(1) {
-		printf( "BCAST\n" );
+		// printf( "BCAST\n" );
 #if 1
 		// Only transmit on advertising channels.
 		for(int c = 0; c < sizeof(adv_channels); c++) {
