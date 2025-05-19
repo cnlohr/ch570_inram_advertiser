@@ -164,7 +164,8 @@ __attribute__((aligned(4))) uint32_t LLE_BUF[0x10c];
 
 __attribute__((interrupt))
 void LLE_IRQHandler() {
-	LL->STATUS = 0xffffffff;
+	LL->STATUS &= LL->INT_EN;
+	BB->CTRL_TX = (BB->CTRL_TX & 0xfffffffc) | 1;
 }
 
 void DevInit(uint8_t TxPower) {
