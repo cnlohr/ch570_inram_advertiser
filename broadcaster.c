@@ -59,13 +59,20 @@ int main()
 	while(1) {
 		// printf( "BCAST\n" );
 #if 1
+		static uint8_t advb[260] = { 0 };
+		Frame_RX( advb, 22 );
+		int i = 0;
+		for( i = 0; i < 32; i++ )
+			printf( "%02x ", advb[i] );
+		printf( "%08x /%08x %08x %08x %08x/ %d %d\n", (unsigned)BB->BB10, (unsigned)LLE_BUF[0], (unsigned)LLE_BUF[1], (unsigned)LLE_BUF[2], (unsigned)LLE_BUF[2], txt, txt1 );
+#elif 0
 		// Only transmit on advertising channels.
 		for(int c = 0; c < sizeof(adv_channels); c++) {
 			Advertise(adv, sizeof(adv), adv_channels[c]);
 		}
 #else
 		// Sequence across spectrum
-		for(int c = 0; c < 41; c++) {
+		for(int c = 0; c < 40; c++) {
 			Advertise(adv, sizeof(adv), c );
 		}
 #endif

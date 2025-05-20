@@ -50,7 +50,7 @@ typedef struct{
 	volatile uint32_t CTRL_TX;
 	volatile uint32_t BB14;
 	volatile uint32_t BB15;
-	volatile uint32_t BB16;
+	volatile uint32_t CTRL_RX_INT;
 	volatile uint32_t BB17;
 	volatile uint32_t BB18;
 	volatile uint32_t BB19;
@@ -151,7 +151,7 @@ typedef struct{
 	volatile uint32_t TXCTUNE_CO_CTRL;
 	volatile uint32_t TXCTUNE_GA_CTRL;
 	volatile uint32_t RF38;
-	volatile uint32_t RF39;
+	volatile uint32_t RXTUNE;
 	volatile uint32_t TXCTUNE_CO[10];
 	volatile uint32_t TXCTUNE_GA[3];
 } RF_Type;
@@ -160,13 +160,38 @@ uint8_t channel_map[] = {1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,17,18,19,20,21,22,2
 #define CO_MID (uint8_t)(RF->TXTUNE_CTRL & ~0xffffffc0)
 #define GA_MID (uint8_t)((RF->TXTUNE_CTRL & ~0x80ffffff) >> 24)
 
+uint32_t tuneFilter;
 __attribute__((aligned(4))) uint32_t LLE_BUF[0x10c];
+
+volatile int txt, txt1;
+
+void DevSetMode(uint32_t mode);
 
 __attribute__((interrupt))
 void LLE_IRQHandler() {
 	LL->STATUS &= LL->INT_EN;
 	BB->CTRL_TX = (BB->CTRL_TX & 0xfffffffc) | 1;
+//	printf( "A\n" );
+	txt1++;
 }
+
+
+__attribute__((interrupt)) void BB_IRQHandler() {
+	//printf( "B  %08x\n", BB->CTRL_RX_INT );
+	static int ikk = 0;
+	// bottom 24 bits = cause
+	//  0x148 = First trigger
+	//  0x3ec = Second trigger (If you delay in here)
+	BB->CTRL_RX_INT=0x00000fff;
+	DevSetMode(0x379);
+	//LL->CTRL_MOD = (0x30000 | ikk);
+	//LL->CTRL_MOD = (0x30000 | 0x79);
+	ikk++;
+//	printf( "B' %08x\n", BB->CTRL_RX_INT );
+	txt++;
+}
+
+
 
 void DevInit(uint8_t TxPower) {
 	LL->LL5 = 0x8c;
@@ -196,13 +221,14 @@ void DevInit(uint8_t TxPower) {
 	BB->BB14 = 0x2020c;
 	BB->BB15 = 0x50;
 
-	NVIC->VTFIDR[3] = 0x14;
+// Enabled in BLECoreInit
+//	NVIC->VTFIDR[3] = 0x14;
 
 	BB->CTRL_TX = (BB->CTRL_TX & 0x1ffffff) | (TxPower | 0x40) << 0x19;
 	BB->CTRL_CFG &= 0xfffffcff;
 }
 
-void DevSetMode(uint16_t mode) {
+void DevSetMode(uint32_t mode) {
 	if(mode) {
 		BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffcffff) | 0x20000;
 		RF->RF2 |= 0x330000;
@@ -317,17 +343,42 @@ void RFEND_TXTune() {
 	RF->RF1 |= 0x100;
 }
 
+
+void RFEND_RXTune() {
+	RF->RF20 &= 0xfffeffff;
+	RF->RF2 |= 0x200000;
+	RF->RF3 = (RF->RF3 & 0xffffffef) | 0x10;
+	RF->RF1 |= 0x1000;
+
+	LL->TMR = 100;
+	while(LL->TMR && ((RF->RXTUNE >> 8) & 1));
+
+	tuneFilter = RF->RXTUNE & 0x1f;
+	RF->RF20 |= 0x10000;
+	RF->RF20 = (RF->RF20 & 0xffffffe0) | tuneFilter;
+	RF->RF2 &= 0xffdfffff;
+
+	// RXADC
+	RF->RF22 &= 0xfffeffff;
+	RF->RF2 |= 0x10000;
+	RF->RF3 = (RF->RF3 & 0xfffffeff) | 0x100;
+	RF->RF1 = (RF->RF1 & 0xfffeffff) | 0x100000;
+}
+
+
 void RegInit() {
 	DevSetMode(0x0558);
 	RFEND_TXTune();
+	RFEND_RXTune();
 	DevSetMode(0);
 }
 
 void BLECoreInit(uint8_t TxPower) {
 	DevInit(TxPower);
 	RegInit();
-	NVIC->IPRIOR[0x15] |= 0x80;
-	NVIC->IENR[0] = 0x200000;
+
+	NVIC_EnableIRQ( BB_IRQn );  /* BLEB */
+	NVIC_EnableIRQ( LLE_IRQn ); /* BLEL */
 }
 
 void DevSetChannel(uint8_t channel) {
@@ -386,3 +437,69 @@ void Advertise(uint8_t adv[], size_t len, uint8_t channel) {
 	LL->CTRL_MOD &= 0xfffff8ff;
 	LL->LL0 |= 0x08;
 }
+
+void Frame_RX(uint8_t adv[], uint8_t channel) {
+
+	// What is this?
+/*
+	if(LL->LL0 & 3) {
+		LL->CTRL_MOD &= 0xfffff8ff;
+		LL->LL0 |= 0x08;
+	}
+*/
+	LL->TMR = 0;
+
+	DevSetChannel(channel);
+
+	BB->CTRL_CFG = (BB->CTRL_CFG & 0xfffffcff) | 0x100; // Must set this code, other codes do not RX.
+
+	// PLEASE NOTE: THIS DOES NOT ACTUALLY WORK ON RX - do not know why we can't RX 2MBPS mode.
+	int is2MBPS = 0;
+	BB->BB9 = (BB->BB9 & 0xf9ffffff) | (is2MBPS?0:0x2000000);
+	int filter = tuneFilter;
+	if(is2MBPS)
+	{
+		filter += 2;
+		if( filter > 0x1f ) filter = 0x1f;
+	}
+
+	RF->RF20 = (RF->RF20 & 0xffffffe0) | (filter & 0x1f);
+	BB->BB5 = (BB->BB5 & 0xffffffc0) | 0xb;
+	BB->BB6 = 0x78; // this is probably wrong
+	BB->BB7 = (BB->BB7 & 0xfffffc00) | 0x9c;
+
+	BB->ACCESSADDRESS1 = 0x8E89BED6; // access address
+	BB->ACCESSADDRESS2 = 0x8E89BED6;
+	BB->CRCINIT1 = 0x555555; // crc init
+	BB->CRCINIT2 = 0x555555;
+	BB->CRCPOLY1 = (BB->CRCPOLY1 & 0xff000000) | 0x80032d; // crc poly
+	BB->CRCPOLY2 = (BB->CRCPOLY2 & 0xff000000) | 0x80032d;
+
+	// If you set this to 1, you MUST execute the two statements at the end.
+	// Otherwise it just goooooes
+	LL->LL1 = (LL->LL1 & 0xfffffffe) | 0;
+
+	// I seriously question if this is right or if FRAME_BUF is for TX only.
+	LL->FRAME_BUF = (uint32_t)adv;
+
+	// TODO: For the future: There is a very interesting thing that happens when you set BB15
+	// to some larger value, you get an absolute monster spew of interrupts.  I think some bit in
+	// there let's you skeet ahead.
+
+	// valid modes = 059-359, but needs to be 59
+	// Interesting setting a few other bits works too, like 0x3ff
+	DevSetMode(0x379);
+
+	LL->LL0 = 1; // Not sure what this does, but on TX it's 2 -- this definitely controls TX vs RX
+
+	//while(LL->TMR);
+
+//	Delay_Ms(100);
+//	DevSetMode(0);
+
+	// This will trigger an LL ISR, not sure why.  Maybe it's so you can know you can switch to a TX packet?
+	// I.e. when you want to send a packet, you can call this, then send the packet and switch back to RX?
+//	LL->CTRL_MOD &= 0xfffff8ff;
+//	LL->LL0 |= 0x08;
+}
+
